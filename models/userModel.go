@@ -1,9 +1,13 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type User struct {
-	gorm.Model
-	Email string `gorm:"unique"`
-	Password string
+    gorm.Model
+    Username string `gorm:"unique"`
+    Email    string `gorm:"unique"`
+    Password string
+    PhotoUrl Photo `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }

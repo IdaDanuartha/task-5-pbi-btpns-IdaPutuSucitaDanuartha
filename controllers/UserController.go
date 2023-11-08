@@ -14,8 +14,7 @@ import (
 
 func Signup(c *gin.Context) {
 	var body struct {
-		Email string
-		Password string
+		models.User
 	}
 
 	if c.Bind(&body) != nil {
@@ -37,6 +36,7 @@ func Signup(c *gin.Context) {
 	}
 
 	user := models.User{
+    Username: body.Username,
     Email: body.Email,
     Password: string(hash),
   }
@@ -58,8 +58,7 @@ func Signup(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	var body struct {
-		Email string
-		Password string
+		models.User
 	}
 
 	if c.Bind(&body) != nil {
@@ -110,10 +109,4 @@ func Login(c *gin.Context) {
 	c.SetCookie("Authorization", tokenString, 3600 * 24 * 30, "", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{})
-}
-
-func Validate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "I'm logged in",
-	})
 }
