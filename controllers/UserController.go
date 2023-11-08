@@ -110,3 +110,9 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{})
 }
+
+func UpdateUser(c *gin.Context) {
+}
+
+func DeleteUser(c *gin.Context) {
+}
