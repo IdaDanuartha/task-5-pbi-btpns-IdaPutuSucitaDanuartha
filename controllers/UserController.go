@@ -13,6 +13,7 @@ import (
 )
 
 func Signup(c *gin.Context) {
+	validate.Struct(u)
 	var body struct {
 		models.User
 	}

@@ -6,8 +6,8 @@ import (
 
 type User struct {
     gorm.Model
-    Username string `gorm:"unique"`
-    Email    string `gorm:"unique"`
-    Password string
+    Username string `gorm:"not null"`
+    Email    string `gorm:"unique;not null"`
+    Password string `gorm:"not null"`
     PhotoUrl Photo `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
