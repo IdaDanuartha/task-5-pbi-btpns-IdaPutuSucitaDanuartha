@@ -145,7 +145,7 @@ func UpdateUser(c *gin.Context) {
 	// Memperbarui data pengguna
 	database.DB.Model(&record).Updates(updatedData)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Record updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
 
 func DeleteUser(c *gin.Context) {
@@ -159,18 +159,18 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	// Mencari record berdasarkan ID
-	var record models.User
-	result := database.DB.First(&record, id)
+	// Mencari user berdasarkan ID
+	var user models.User
+	result := database.DB.First(&user, id)
 
-	// Memeriksa apakah record ditemukan atau tidak
+	// Memeriksa apakah user ditemukan atau tidak
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
-	// Menghapus record dari database
-	database.DB.Delete(&record)
+	// Menghapus user dari database
+	database.DB.Delete(&user)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Record deleted successfully"})	
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})	
 }

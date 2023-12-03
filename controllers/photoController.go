@@ -6,25 +6,44 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
+
+	"btpn-syariah-final-project/helpers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetPhoto(c *gin.Context) {
-	files, err := getUploadedFiles()
+	user, err := helpers.GetUserLogin(c)
+	
+	var photo models.Photo
+	database.DB.First(&photo, "user_id = ?", user.ID)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "photo not found",
 		})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"files": files,
+		"userPhoto": &photo,
 	})
+
+	// files, err := getUploadedFiles()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{
+	// 		"error": err.Error(),
+	// 	})
+	// 	return
+	// }
 }
 
 func StorePhoto(c *gin.Context) {
+	user, err := helpers.GetUserLogin(c)
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -45,11 +64,15 @@ func StorePhoto(c *gin.Context) {
 		return
 	}
 
+	currentTime := time.Now()
+
+	formattedTime := currentTime.Format("20060102150405")	
+
 	photo := models.Photo{
-    UserID: 1,
+    UserID: user.ID,
     Title: c.Request.FormValue("title"),
     Caption: c.Request.FormValue("caption"),
-    PhotoUrl: "uploads/"+file.Filename,
+    PhotoUrl: "uploads/" + formattedTime + "_" + file.Filename,
   }
 
 	result := database.DB.Create(&photo)
@@ -63,7 +86,7 @@ func StorePhoto(c *gin.Context) {
 	}
 
 	// Simpan file ke server
-	err = c.SaveUploadedFile(file, "uploads/"+file.Filename)
+	err = c.SaveUploadedFile(file, "uploads/" + formattedTime + "_" + file.Filename)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -72,36 +95,54 @@ func StorePhoto(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("File %s berhasil diunggah!", file.Filename),
+		"message": fmt.Sprintf("Foto profil berhasil ditambahkan"),
 	})
 }
 
 func UpdatePhoto(c *gin.Context) {
-	// file, err := c.FormFile("file")
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": err.Error(),
-	// 	})
-	// 	return
-	// }
+	// Mendapatkan ID dari parameter URL
+	idParam := c.Param("photoId")
 
-	// // Simpan file ke server
-	// err = c.SaveUploadedFile(file, "uploads/"+file.Filename)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{
-	// 		"error": err.Error(),
-	// 	})
-	// 	return
-	// }
+	file, err := c.FormFile("file")
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("File berhasil diupdate!"),
-	})
-}
+	currentTime := time.Now()
 
-func DeletePhoto(c *gin.Context) {
-	filename := c.Param("photoId")
-	err := deleteFile(filename)
+	formattedTime := currentTime.Format("20060102150405")	
+
+	// Konversi ID dari string ke int
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	// Mencari photo berdasarkan ID
+	var photo models.Photo
+	result := database.DB.First(&photo, id)
+	
+	var photoUrl string
+	if file == nil {
+		photoUrl = photo.PhotoUrl
+	} else {
+		photoUrl = "uploads/" + formattedTime + "_" + file.Filename
+	}
+
+	// Memeriksa apakah photo ditemukan atau tidak
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Photo user not found"})
+		return
+	}
+
+	// Memperbarui data pengguna	
+
+	photo.Title = c.Request.FormValue("title")
+	photo.Caption = c.Request.FormValue("caption")
+	photo.PhotoUrl = photoUrl
+	
+	database.DB.Save(&photo)	
+
+	// Simpan file ke server
+	err = c.SaveUploadedFile(file, "uploads/" + formattedTime + "_" + file.Filename)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -109,28 +150,46 @@ func DeletePhoto(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("File %s berhasil dihapus!", filename),
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Photo user updated successfully"})
 }
 
-// Fungsi untuk mendapatkan daftar file yang sudah diunggah
-func getUploadedFiles() ([]string, error) {
-	files, err := os.ReadDir("uploads")
+func DeletePhoto(c *gin.Context) {
+	// Mendapatkan ID dari parameter URL
+	idParam := c.Param("photoId")
+
+	// Konversi ID dari string ke int
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		return nil, err
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
 	}
 
-	var fileNames []string
-	for _, file := range files {
-		fileNames = append(fileNames, file.Name())
+	// Mencari photo berdasarkan ID
+	var photo models.Photo
+	result := database.DB.First(&photo, id)
+
+	// Memeriksa apakah record ditemukan atau tidak
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Photo user not found"})
+		return
 	}
 
-	return fileNames, nil
+	// Menghapus record dari database
+	database.DB.Delete(&photo)
+
+	err = deleteFile(photo.PhotoUrl)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	 
+	c.JSON(http.StatusOK, gin.H{"message": "Photo user deleted successfully"})	
 }
 
 // Fungsi untuk menghapus file
 func deleteFile(filename string) error {
-	err := os.Remove("uploads/" + filename)
+	err := os.Remove(filename)
 	return err
 }

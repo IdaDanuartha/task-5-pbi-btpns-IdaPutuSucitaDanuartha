@@ -18,8 +18,8 @@ func SetupRouter() *gin.Engine {
 	// Photo routes
 	r.GET("/photos", middlewares.RequireAuth, controllers.GetPhoto)	
 	r.POST("/photos", middlewares.RequireAuth, controllers.StorePhoto)
-	r.PUT("/:photoId", middlewares.RequireAuth, controllers.UpdatePhoto)	
-	r.DELETE("/:photoId", middlewares.RequireAuth, controllers.DeletePhoto)
+	r.PUT("/photos/:photoId", middlewares.RequireAuth, controllers.UpdatePhoto)	
+	r.DELETE("/photos/:photoId", middlewares.RequireAuth, controllers.DeletePhoto)
 
 	return r
 }
