@@ -17,8 +17,9 @@ func RequireAuth(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
-	
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -27,27 +28,34 @@ func RequireAuth(c *gin.Context) {
 		return []byte(os.Getenv("SECRET")), nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	if err != nil || !token.Valid {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		// check the exp
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		// find the user with token sub
 		var user models.User
-    database.DB.First(&user, claims["sub"])
+		if err := database.DB.First(&user, claims["sub"]).Error; err != nil {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 
 		// attach to req
 		c.Set("user", user)
 
-		// continue
-		c.Next()
-		
 		fmt.Println(claims["foo"], claims["nbf"])
 	} else {
 		c.AbortWithStatus(http.StatusUnauthorized)
+		return
 	}
 
-
+	// continue
 	c.Next()
 }

@@ -5,6 +5,7 @@ import (
 	"btpn-syariah-final-project/models"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,8 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Signup(c *gin.Context) {
-	validate.Struct(u)
+func Signup(c *gin.Context) {	
 	var body struct {
 		models.User
 	}
@@ -109,11 +109,68 @@ func Login(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("Authorization", tokenString, 3600 * 24 * 30, "", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User login successfully",
+	})
 }
 
 func UpdateUser(c *gin.Context) {
+	// Mendapatkan ID dari parameter URL
+	idParam := c.Param("userId")
+
+	// Konversi ID dari string ke int
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	// Mencari record berdasarkan ID
+	var record models.User
+	result := database.DB.First(&record, id)
+
+	// Memeriksa apakah record ditemukan atau tidak
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Mendapatkan data baru dari body request
+	var updatedData models.User
+	if err := c.ShouldBindJSON(&updatedData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data format"})
+		return
+	}
+
+	// Memperbarui data pengguna
+	database.DB.Model(&record).Updates(updatedData)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Record updated successfully"})
 }
 
 func DeleteUser(c *gin.Context) {
+	// Mendapatkan ID dari parameter URL
+	idParam := c.Param("userId")
+
+	// Konversi ID dari string ke int
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	// Mencari record berdasarkan ID
+	var record models.User
+	result := database.DB.First(&record, id)
+
+	// Memeriksa apakah record ditemukan atau tidak
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Menghapus record dari database
+	database.DB.Delete(&record)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Record deleted successfully"})	
 }

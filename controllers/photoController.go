@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"btpn-syariah-final-project/database"
+	"btpn-syariah-final-project/models"
 	"fmt"
 	"net/http"
 	"os"
@@ -28,6 +30,35 @@ func StorePhoto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
+		return
+	}
+
+	var body struct {
+		models.Photo
+	}
+
+	if c.Bind(&body) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read body",
+		})
+
+		return
+	}
+
+	photo := models.Photo{
+    UserID: 1,
+    Title: c.Request.FormValue("title"),
+    Caption: c.Request.FormValue("caption"),
+    PhotoUrl: "uploads/"+file.Filename,
+  }
+
+	result := database.DB.Create(&photo)
+
+	if result.Error!= nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+      "error": "Failed to store photo",
+    })
+
 		return
 	}
 
