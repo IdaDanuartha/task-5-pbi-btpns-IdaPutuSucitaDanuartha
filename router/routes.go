@@ -10,7 +10,7 @@ func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	// Photo authentication
-	r.POST("/users/register", controllers.Signup)
+	r.POST("/users/register", controllers.Signup) 
 	r.POST("/users/login", controllers.Login)	
 	r.PUT("/users/:userId", middlewares.RequireAuth, controllers.UpdateUser)	
 	r.DELETE("/users/:userId", middlewares.RequireAuth, controllers.DeleteUser)	
